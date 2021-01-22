@@ -2,6 +2,9 @@ import tkinter as tk
 import sounddevice as sd
 import soundfile as sf
 
+from tkinter import filedialog
+from pathlib import Path
+
 #nowe importy
 import matplotlib
 from scipy.io import wavfile as wav
@@ -10,15 +13,22 @@ matplotlib.use('TKAgg') #wazne
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 
+#widmo spektrogram
+from scipy import signal
+import matplotlib.pyplot as plt
+import numpy as np
+from scipy.io import wavfile
+
+
 class GUI(tk.Frame):
     def fun(self, arg1):
         print("test"+str(arg1))
 
-    def nagraj(self, fs, s):
+    def record(self, fs, s):
         from scipy.io.wavfile import write
         #fs = 44100  # probki 1/s
         #s = 3
-        self.btn3['state'] = 'normal'
+        #self.btn3['state'] = 'normal'
         nagranie = sd.rec(int(fs * s), samplerate=fs, channels=2)
         sd.wait()
         write("pliczek.wav", fs, nagranie)
@@ -31,6 +41,66 @@ class GUI(tk.Frame):
         sd.play(data, fs)
         sd.wait()  # Wait until file is done playing
 
+    def quit(self):
+        global root
+        root.destroy()
+
+    def drawSpectrogram(self, filename):
+        sample_rate, samples = wavfile.read(filename)
+
+        n_channel = samples.shape
+        data = None
+
+        if n_channel == 1:
+            data = samples[:]
+        else:
+            data = samples[:, 0]
+
+        frequencies, times, spectrogram = signal.spectrogram(data, sample_rate, nfft=1024, noverlap=900, nperseg=1024)
+
+        fig = Figure(linewidth=5, edgecolor='#000000')
+        a = fig.add_subplot(111)
+        a.pcolormesh(times, frequencies, 10*np.log10(spectrogram), shading='auto')
+
+        canvas = FigureCanvasTkAgg(fig, master=self)
+        canvas.get_tk_widget().place(x=10, y=20, width=700, height=350)
+        a.set_yticklabels([])
+        a.set_xticklabels([])
+        fig.tight_layout()
+        canvas.draw()
+
+    def drawSoundWave(self, filename):
+        rate, data = wavfile.read(filename)
+
+        if len(data.shape) == 1:
+            channel1 = data[:]
+        else:
+            channel1 = data[:, 0]
+
+        fig2 = Figure(linewidth=5, edgecolor='#000000')
+        a = fig2.add_subplot(111)
+        a.plot(channel1, color='black')
+
+        canvas = FigureCanvasTkAgg(fig2, master=self)
+        canvas.get_tk_widget().place(x=10, y=380, width=700, height=210)
+
+        canvas.draw()
+        # a.invert_yaxis()
+
+        #a.set_title("test")
+        #a.set_ylabel('test y')
+        #a.set_xlabel('test x')
+        # a.axis('off')
+        # a.set_yticklabels([])
+        # a.set_xticklabels([])
+        # fig2.tight_layout()
+
+    def open(self):
+        filename = filedialog.askopenfile(initialdir=None, title="Select file", filetypes=(("plikiWav", "*.wav"),))
+
+        self.drawSpectrogram(filename)
+        self.drawSoundWave(filename)
+
     def __init__(self, parent):
         tk.Frame.__init__(self, parent)
         self.parent = parent
@@ -38,35 +108,16 @@ class GUI(tk.Frame):
         menubar = tk.Menu(self)
 
         submenu1 = tk.Menu(menubar, tearoff=0)
-        submenu1.add_command(label="Test 1", command=lambda:self.fun(10))
-        submenu1.add_command(label="Test 2", command=lambda: self.fun(10))
-        submenu1.add_command(label="Test 3", command=lambda: self.fun(10))
+        submenu1.add_command(label="Otwórz", command=lambda: self.open())
+        submenu1.add_command(label="Nagraj", command=lambda: self.record(4410, 2))
+        submenu1.add_command(label="Zapisz", command=lambda: self.fun(10))
+        submenu1.add_command(label="Zakoncz", command=lambda: self.destroy())
 
         menubar.add_cascade(label="Plik", menu=submenu1)
 
-        submenu2 = tk.Menu(menubar, tearoff=0)
-        submenu2.add_command(label="Test 1", command=lambda: self.fun(10))
-        submenu2.add_command(label="Test 2", command=lambda: self.fun(10))
-        submenu2.add_command(label="Test 3", command=lambda: self.fun(10))
-
-        menubar.add_cascade(label="Edycja", menu=submenu2)
-
-        submenu3 = tk.Menu(menubar, tearoff=0)
-        submenu3.add_command(label="Test 1", command=lambda: self.fun(10))
-        submenu3.add_command(label="Test 2", command=lambda: self.fun(10))
-        submenu3.add_command(label="Test 3", command=lambda: self.fun(10))
-
-        menubar.add_cascade(label="Wyswietlacz", menu=submenu3)
-
-        submenu4 = tk.Menu(menubar, tearoff=0)
-        submenu4.add_command(label="Test 1", command=lambda: self.fun(10))
-        submenu4.add_command(label="Test 2", command=lambda: self.fun(10))
-        submenu4.add_command(label="Test 3", command=lambda: self.fun(10))
-
-        menubar.add_cascade(label="Widok", menu=submenu2)
-
         self.parent.config(menu=menubar)
 
+        """
         lbl = tk.Label(self, text="Widok pliku", anchor=tk.W)
         lbl.place(x=0, y=0, width=100, height=25)
 
@@ -78,12 +129,15 @@ class GUI(tk.Frame):
 
         display2 = tk.Label(self, text=None, background="white", anchor=tk.W)
         display2.place(x=30, y=270, width=400, height=200)
+        """
 
+        """
         btn1 = tk.Button(self, text="Start", command=lambda: self.fun(1), state=tk.ACTIVE)
         btn1.place(x=480, y=50, width=70, height=30)
 
         btn2 = tk.Button(self, text="Stop", command=lambda: self.fun(2), state=tk.ACTIVE)
         btn2.place(x=550, y=50, width=70, height=30)
+        """
 
         # lbl3 = tk.Label(self, text="Plik do zapisania:")
         # lbl3.place(x=430, y=100, width=100, height=50)
@@ -91,31 +145,34 @@ class GUI(tk.Frame):
         # e1 = tk.Entry(self)
         # e1.place(x=530, y=110, width=100, height=20)
 
-        self.btn3 = tk.Button(self, text="Nagraj", command=lambda: self.nagraj(4410, 2), state=tk.ACTIVE)
-        self.btn3.place(x=630, y=110, width=100, height=20)
+        """ NAGRAJ, WCZYTAJ
+        self.btn3 = tk.Button(self, text="Nagraj", command=lambda: self.record(4410, 2), state=tk.ACTIVE)
+        self.btn3.place(x=0, y=0, width=100, height=20)
 
         lbl4 = tk.Label(self, text="Plik do wczytania: ")
-        lbl4.place(x=430, y=140, width=100, height=50)
+        lbl4.place(x=100, y=0, width=100, height=50)
 
         e2 = tk.Entry(self)
-        e2.place(x=530, y=150, width=100, height=20)
+        e2.place(x=200, y=10, width=100, height=20)
 
         btn4 = tk.Button(self, text="Wczytaj", command=lambda: self.wczytaj(e2.get()), state=tk.ACTIVE)
-        btn4.place(x=630, y=150, width=100, height=20)
+        btn4.place(x=300, y=10, width=100, height=20)
 
-        self.pack(side="top", fill="both", expand=True)
+        #self.pack(side="top", fill="both", expand=True)
+        """
 
         #wykresiki:
-        """
-        rate, data = wav.read('test.wav')
-        channel1 = data[:, 0]
 
+        #rate, data = wav.read('pliczek.wav')
+        #channel1 = data[:, 0]
+
+        """
         fig = Figure(linewidth=5, edgecolor='#000000')
         a = fig.add_subplot(111)
         a.plot(channel1, color='black')
 
         canvas = FigureCanvasTkAgg(fig, master=self)
-        canvas.get_tk_widget().place(x=10, y=50, width=700, height=200)
+        canvas.get_tk_widget().place(x=10, y=50, width=700, height=300)
         canvas.draw()
 
         #a.invert_yaxis()
@@ -127,30 +184,47 @@ class GUI(tk.Frame):
         a.set_xticklabels([])
         fig.tight_layout()
 
-        fig2 = Figure(linewidth=5, edgecolor='#000000')
-        a = fig2.add_subplot(111)
-        a.plot(channel1, color='black')
+        """
+        
+        #fig2 = Figure(linewidth=5, edgecolor='#000000')
+        #a = fig2.add_subplot(111)
+        #a.plot(channel1, color='black')
 
-        canvas = FigureCanvasTkAgg(fig2, master=self)
-        canvas.get_tk_widget().place(x=10, y=250, width=700, height=200)
-        canvas.draw()
+        #canvas = FigureCanvasTkAgg(fig2, master=self)
+        #canvas.get_tk_widget().place(x=10, y=380, width=700, height=210)
+        #canvas.draw()
 
         #a.invert_yaxis()
-        a.set_title("test")
-        a.set_ylabel('test y')
-        a.set_xlabel('test x')
+        #a.set_title("Test")
+        #a.set_ylabel('test y')
+        #a.set_xlabel('test x')
         #a.axis('off')
-        a.set_yticklabels([])
-        a.set_xticklabels([])
-        fig2.tight_layout()
+        #a.set_yticklabels([])
+        #a.set_xticklabels([])
+        #fig2.tight_layout()
+
+
+        #widmo2
+        #sample_rate, samples = wavfile.read('pliczek.wav')
+
+        #frequencies, times, spectrogram = signal.spectrogram(samples[:, 1], sample_rate, nfft=1024, noverlap=900, nperseg=1024)
+
+        #plt.pcolormesh(times, frequencies, spectrogram, shading='gouraud')
+        #plt.ylabel('Frequency [Hz]')
+        #plt.xlabel('Time [sec]')
+        #plt.show()
+
+        #self.drawSpectrogram("StarWars60.wav")
+        self.drawSoundWave("StarWars60.wav")
+
         self.pack(side="top", fill="both", expand=True)
-        """
+
 
 if __name__ == "__main__":
 
     root = tk.Tk()
-    root.title("Spektrogram")
-    root.geometry('720x480')
+    root.title("Spectrogram")
+    root.geometry('800x600')
     root.resizable(False, False)
     app = GUI(root)
     root.mainloop()
@@ -191,7 +265,10 @@ if __name__ == "__main__":
 
 
 
+    #POMOCE:
+
     #grid, place, pack, tk.Button, tk.Lablel, tk.Menu
+
     #otworzymy pliczek
 
     """
