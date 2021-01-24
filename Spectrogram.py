@@ -23,6 +23,8 @@ import matplotlib.backends.backend_tkagg as tkagg
 
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk as NavigationToolbar
 
+global root
+
 
 class GUI(tk.Frame):
     def fun(self, arg1):
@@ -52,7 +54,7 @@ class GUI(tk.Frame):
         sd.wait()  # Wait until file is done playing
 
     def quit(self):
-        global root
+        #global root
         root.destroy()
 
     def drawSpectrogram(self, filename):
@@ -81,6 +83,9 @@ class GUI(tk.Frame):
         fig.tight_layout()
         canvas.draw()
         #tkagg.NavigationToolbar2TkAgg(canvas, root)
+        toolbar = NavigationToolbar(canvas, root)
+        toolbar.update()
+
 
     def drawSoundWave(self, filename):
         rate, data = wavfile.read(filename)
@@ -98,6 +103,8 @@ class GUI(tk.Frame):
         canvas.get_tk_widget().place(x=10, y=380, width=700, height=210)
 
         canvas.draw()
+        toolbar = NavigationToolbar(canvas, root)
+        toolbar.update()
         #tkagg.NavigationToolbar2TkAgg(canvas, root)
         # a.invert_yaxis()
 
@@ -129,16 +136,16 @@ class GUI(tk.Frame):
         menubar = tk.Menu(self)
 
         submenu1 = tk.Menu(menubar, tearoff=0)
-        submenu1.add_command(label="Otwórz", command=lambda: self.open())
-        submenu1.add_command(label="Nagraj", command=lambda: self.record(4410, 2))
-        submenu1.add_command(label="Zapisz", command=lambda: self.fun(10))
-        submenu1.add_command(label="Zakoncz", command=lambda: self.destroy())
+        submenu1.add_command(label="Open", command=lambda: self.open())
+        submenu1.add_command(label="Record", command=lambda: self.record(4410, 2))
+        submenu1.add_command(label="Save //todo", command=lambda: self.fun(10))
+        submenu1.add_command(label="Quit", command=lambda: self.destroy())
 
-        menubar.add_cascade(label="Plik", menu=submenu1)
+        menubar.add_cascade(label="File", menu=submenu1)
 
         self.parent.config(menu=menubar)
 
-        self.drawNavigationToolbar()
+        #self.drawNavigationToolbar()
 
         self.pack(side="top", fill="both", expand=True)
 
