@@ -10,7 +10,6 @@ import matplotlib
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk as NavigationToolbar
 matplotlib.use('TKAgg')
-
 from scipy import signal
 from scipy.io import wavfile
 
