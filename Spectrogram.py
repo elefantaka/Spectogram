@@ -25,36 +25,33 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolb
 
 global root
 
-
 class GUI(tk.Frame):
-    def fun(self, arg1):
-        print("test"+str(arg1))
 
     def record(self, fs, s):
         from scipy.io.wavfile import write
         #fs = 44100  # probki 1/s
         #s = 3
         #self.btn3['state'] = 'normal'
+        tk.messagebox.showinfo(title="Record", message="Please speak for 5sec to record")
+
         nagranie = sd.rec(int(fs * s), samplerate=fs, channels=2)
         sd.wait()
+
         files = [('WAV Files', '*.wav')]
-        filename = filedialog.asksaveasfile(filetypes=files, defaultextension=files)
+        filedialog.asksaveasfile(filetypes=files, defaultextension=files)
+        filename = filedialog.askopenfilename(initialdir=None, title="Select file", filetypes=(("plikiWav", "*.wav"),))
+
         if filename:
-            filename.write(nagranie)
-            filename.close()
+            wavfile.write(filename=filename, rate=fs, data=nagranie)
 
-        #write(filename, fs, nagranie)
-        sd.play(nagranie, fs)
-        sd.wait()
+        self.drawSpectrogram(filename)
+        self.drawSoundWave(filename)
 
-    def wczytaj(self, e):
-        filename = e
-        data, fs = sf.read(filename, dtype='float32')
-        sd.play(data, fs)
-        sd.wait()  # Wait until file is done playing
+        #for tests:
+        #sd.play(nagranie, fs)
+        #sd.wait()
 
     def quit(self):
-        #global root
         root.destroy()
 
     def drawSpectrogram(self, filename):
@@ -70,21 +67,27 @@ class GUI(tk.Frame):
 
         frequencies, times, spectrogram = signal.spectrogram(data, sample_rate, nfft=1024, noverlap=900, nperseg=1024)
 
-        fig = Figure(linewidth=5, edgecolor='#000000')
+        fig = Figure(linewidth=0, edgecolor='#000000')
         a = fig.add_subplot(111)
         a.pcolormesh(times, frequencies, 10**(-10)*(spectrogram), shading='auto')
 
         #10 * np.log10(spectrogram)
 
         canvas = FigureCanvasTkAgg(fig, master=self)
-        canvas.get_tk_widget().place(x=10, y=20, width=700, height=350)
-        a.set_yticklabels([])
-        a.set_xticklabels([])
-        fig.tight_layout()
+        canvas.get_tk_widget().place(x=30, y=0, width=700, height=390)
+        #a.set_yticklabels(['test y'])
+        #a.set_xticklabels(['test x'])
+        #fig.tight_layout()
+        #plt.ylabel('Frequency [Hz]')
+        #plt.xlabel('Time [sec]')
+        a.set_ylabel('Frequency [Hz]')
+        a.set_xlabel('Time [sec]')
         canvas.draw()
-        #tkagg.NavigationToolbar2TkAgg(canvas, root)
+
         toolbar = NavigationToolbar(canvas, root)
         toolbar.update()
+        toolbar.place(x=10, y=400)
+
 
 
     def drawSoundWave(self, filename):
@@ -95,39 +98,33 @@ class GUI(tk.Frame):
         else:
             channel1 = data[:, 0]
 
-        fig2 = Figure(linewidth=5, edgecolor='#000000')
+        fig2 = Figure(linewidth=0, edgecolor='#000000')
         a = fig2.add_subplot(111)
         a.plot(channel1, color='black')
 
-        canvas = FigureCanvasTkAgg(fig2, master=self)
-        canvas.get_tk_widget().place(x=10, y=380, width=700, height=210)
+        canvasSoundWave = FigureCanvasTkAgg(fig2, master=self)
+        canvasSoundWave.get_tk_widget().place(x=10, y=450, width=750, height=200)
 
-        canvas.draw()
-        toolbar = NavigationToolbar(canvas, root)
+        canvasSoundWave.draw()
+        toolbar = NavigationToolbar(canvasSoundWave, root)
         toolbar.update()
-        #tkagg.NavigationToolbar2TkAgg(canvas, root)
-        # a.invert_yaxis()
+        toolbar.place(x=10, y=650)
+
+        a.invert_yaxis()
 
         #a.set_title("test")
         #a.set_ylabel('test y')
         #a.set_xlabel('test x')
-        # a.axis('off')
+        a.axis('on')
         # a.set_yticklabels([])
         # a.set_xticklabels([])
-        # fig2.tight_layout()
+        fig2.tight_layout()
 
     def open(self):
         filename = filedialog.askopenfilename(initialdir=None, title="Select file", filetypes=(("plikiWav", "*.wav"),))
 
         self.drawSpectrogram(filename)
         self.drawSoundWave(filename)
-
-    def drawNavigationToolbar(self):
-        f = Figure(figsize=(5, 4), dpi=100)
-        canvas = FigureCanvasTkAgg(f, master=root)
-        toolbar = NavigationToolbar(canvas, root)
-        toolbar.update()
-
 
     def __init__(self, parent):
         tk.Frame.__init__(self, parent)
@@ -137,15 +134,12 @@ class GUI(tk.Frame):
 
         submenu1 = tk.Menu(menubar, tearoff=0)
         submenu1.add_command(label="Open", command=lambda: self.open())
-        submenu1.add_command(label="Record", command=lambda: self.record(4410, 2))
-        submenu1.add_command(label="Save //todo", command=lambda: self.fun(10))
-        submenu1.add_command(label="Quit", command=lambda: self.destroy())
+        submenu1.add_command(label="Record & Save", command=lambda: self.record(4410, 5))
+        #submenu1.add_command(label="Quit", command=lambda: self.destroy())
 
         menubar.add_cascade(label="File", menu=submenu1)
 
         self.parent.config(menu=menubar)
-
-        #self.drawNavigationToolbar()
 
         self.pack(side="top", fill="both", expand=True)
 
@@ -186,10 +180,6 @@ if __name__ == "__main__":
     plt.subplot(2,2,2)
     plt.show()
     """
-
-
-
-
 
     #POMOCE:
 
@@ -386,6 +376,14 @@ fig.tight_layout()
 # DO TESTOWANIA RYSOWANIA WYKRESOW:
 # self.drawSpectrogram("StarWars60.wav")
 # self.drawSoundWave("StarWars60.wav")
+
+"""
+def wczytaj(self, e):
+    filename = e
+    data, fs = sf.read(filename, dtype='float32')
+    sd.play(data, fs)
+    sd.wait()  # Wait until file is done playing
+    """
 
 
 
